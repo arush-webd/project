@@ -1,0 +1,265 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <iomanip>
+
+using namespace std;
+
+// Forward declarations
+class Train;
+class Ticket;
+
+// Class to manage all trains
+class TrainManager {
+private:
+    vector<Train> trains;
+
+public:
+    // Add train to the system
+    void addTrain(const Train& train) {
+        trains.push_back(train);
+    }
+
+    // Display all trains
+    void displayAllTrains() {
+        cout << "All Trains:" << endl;
+        for (const auto& train : trains) {
+            train.displayTrainDetails();
+            cout << "---------------------------" << endl;
+        }
+    }
+
+    // Search train by number
+    Train* findTrainByNumber(const string& trainNumber) {
+        for (auto& train : trains) {
+            if (train.getTrainNumber() == trainNumber) {
+                return &train;
+            }
+        }
+        return nullptr;
+    }
+};
+
+// Class representing a train
+class Train {
+private:
+    string trainNumber;
+    string trainName;
+    string departureTime;
+    string arrivalTime;
+    string sourceStation;
+    string destinationStation;
+    vector<pair<string, double>> compartments; // Pair of compartment name and fare
+
+public:
+    // Constructor
+    Train(string number, string name, string depart, string arrive, string source, string dest) 
+        : trainNumber(number), trainName(name), departureTime(depart), arrivalTime(arrive),
+          sourceStation(source), destinationStation(dest) {}
+
+    // Add compartment with fare
+    void addCompartment(string compartment, double fare) {
+        compartments.push_back(make_pair(compartment, fare));
+    }
+
+    // Display train details
+    void displayTrainDetails() const {
+        cout << "Train Number: " << trainNumber << endl;
+        cout << "Train Name: " << trainName << endl;
+        cout << "Departure Time: " << departureTime << endl;
+        cout << "Arrival Time: " << arrivalTime << endl;
+        cout << "Source Station: " << sourceStation << endl;
+        cout << "Destination Station: " << destinationStation << endl;
+        cout << "Compartments and Fares:" << endl;
+        for (const auto& comp : compartments) {
+            cout << "  " << comp.first << ": $" << fixed << setprecision(2) << comp.second << endl;
+        }
+    }
+
+    // Get train number
+    string getTrainNumber() const {
+        return trainNumber;
+    }
+
+    // Get compartments and fares
+    const vector<pair<string, double>>& getCompartments() const {
+        return compartments;
+    }
+};
+
+// Class representing a ticket
+class Ticket {
+private:
+    string PNR;
+    Train* train;
+    vector<string> passengers;
+
+public:
+    // Constructor
+    Ticket(string pnr, Train* t) : PNR(pnr), train(t) {}
+
+    // Add passenger to ticket
+    void addPassenger(const string& passenger) {
+        passengers.push_back(passenger);
+    }
+
+    // Display ticket details
+    void displayTicketDetails() const {
+        cout << "PNR: " << PNR << endl;
+        if (train) {
+            train->displayTrainDetails();
+        }
+        cout << "Passengers:" << endl;
+        for (const auto& passenger : passengers) {
+            cout << "  " << passenger << endl;
+        }
+    }
+
+    // Get total fare
+    double getTotalFare() const {
+        double totalFare = 0.0;
+        if (train) {
+            for (const auto& comp : train->getCompartments()) {
+                totalFare += comp.second; // Sum up all compartment fares
+            }
+        }
+        return totalFare;
+    }
+};
+
+// Class to manage tickets and passengers
+class TicketManager {
+private:
+    vector<Ticket> tickets;
+
+public:
+    // Book ticket
+    void bookTicket(const Ticket& ticket) {
+        tickets.push_back(ticket);
+    }
+
+    // Display all booked tickets
+    void displayBookedTickets() const {
+        cout << "Booked Tickets:" << endl;
+        for (const auto& ticket : tickets) {
+            ticket.displayTicketDetails();
+            cout << "---------------------------" << endl;
+        }
+    }
+};
+
+// Function to manage interactions with user
+class RailwaySystem {
+private:
+    TrainManager trainManager;
+    TicketManager ticketManager;
+
+public:
+    // Function to run the railway management system
+    void run() {
+        char choice;
+        do {
+            displayMenu();
+            cout << "Enter your choice: ";
+            cin >> choice;
+            cin.ignore(); // Ignore newline left in buffer
+
+            switch (choice) {
+                case '1':
+                    displayAllTrains();
+                    break;
+                case '2':
+                    bookTicket();
+                    break;
+                case '3':
+                    displayBookedTickets();
+                    break;
+                case '4':
+                    cout << "Exiting program." << endl;
+                    break;
+                default:
+                    cout << "Invalid choice. Please try again." << endl;
+            }
+        } while (choice != '4');
+    }
+
+private:
+    // Display main menu
+    void displayMenu() const {
+        cout << "\n==== Railway Management System ====\n";
+        cout << "1. View all trains\n";
+        cout << "2. Book a ticket\n";
+        cout << "3. View booked tickets\n";
+        cout << "4. Exit\n";
+    }
+
+    // Display all trains
+    void displayAllTrains() const {
+        trainManager.displayAllTrains();
+    }
+
+    // Book a ticket
+    void bookTicket() {
+        string trainNumber;
+        cout << "Enter train number: ";
+        getline(cin, trainNumber);
+
+        Train* train = trainManager.findTrainByNumber(trainNumber);
+        if (train == nullptr) {
+            cout << "Train not found." << endl;
+            return;
+        }
+
+        string pnr = generatePNR();
+        Ticket ticket(pnr, train);
+
+        int numPassengers;
+        cout << "Enter number of passengers: ";
+        cin >> numPassengers;
+        cin.ignore(); // Ignore newline left in buffer
+
+        for (int i = 0; i < numPassengers; ++i) {
+            string passengerName;
+            cout << "Enter passenger " << i + 1 << " name: ";
+            getline(cin, passengerName);
+            ticket.addPassenger(passengerName);
+        }
+
+        ticketManager.bookTicket(ticket);
+
+        cout << "Ticket booked successfully. PNR: " << pnr << endl;
+    }
+
+    // Generate a random PNR (Placeholder implementation)
+    string generatePNR() const {
+        return "PNR" + to_string(rand() % 1000000 + 100000); // Random PNR number
+    }
+
+    // Display booked tickets
+    void displayBookedTickets() const {
+        ticketManager.displayBookedTickets();
+    }
+};
+
+// Main function to start the program
+int main() {
+    // Create trains and add to TrainManager
+    Train train1("12345", "Express", "10:00 AM", "2:00 PM", "Station A", "Station B");
+    train1.addCompartment("AC Chair Car", 100.0);
+    train1.addCompartment("Sleeper Class", 50.0);
+
+    Train train2("54321", "Superfast", "12:00 PM", "4:00 PM", "Station C", "Station D");
+    train2.addCompartment("AC 1st Class", 200.0);
+    train2.addCompartment("AC 2nd Class", 150.0);
+
+    TrainManager trainManager;
+    trainManager.addTrain(train1);
+    trainManager.addTrain(train2);
+
+    // Run the railway system
+    RailwaySystem system;
+    system.run();
+
+    return 0;
+}
